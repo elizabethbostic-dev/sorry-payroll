@@ -3,8 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Payroll Pathway: SORRY! Game</title>
-    <!-- Load Tailwind CSS -->
+    <title>Payroll Pathway: SORRY! Game (Corrected)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
@@ -38,7 +37,6 @@
 </head>
 <body class="min-h-screen flex flex-col">
 
-    <!-- Main Header -->
     <header class="bg-gray-800 text-white p-4 shadow-xl">
         <h1 class="text-3xl font-bold tracking-tight">
             <span id="gameTitle">Payroll Pathway: The SORRY! Game</span>
@@ -46,11 +44,9 @@
         <p class="text-sm opacity-80 mt-1" id="gameSubtitle">Compliance & Internal Controls Role-Play</p>
     </header>
 
-    <!-- Main Content Area -->
     <main class="flex-grow p-4 md:p-8">
         <div id="game-container" class="max-w-4xl mx-auto bg-white rounded-xl shadow-2xl p-6 md:p-8">
 
-            <!-- --- HOW TO PLAY / DIRECTIONS SECTION --- -->
             <div id="rules-section" class="mb-8 border border-gray-300 rounded-xl overflow-hidden shadow-lg">
                 <button onclick="toggleRules()" class="w-full text-left p-4 bg-gray-100 hover:bg-gray-200 text-lg font-semibold text-gray-700 flex justify-between items-center transition duration-200">
                     <span>📚 How to Play (GM Instructions)</span>
@@ -80,35 +76,26 @@
                     </ul>
                 </div>
             </div>
-            <!-- --- END DIRECTIONS SECTION --- -->
-
-
-            <!-- Game Phase Header (Fixed on SORRY! Game) -->
             <div class="flex justify-between items-center mb-6 border-b pb-4">
                 <h2 class="text-2xl font-semibold text-gray-700" id="phase-header">Payroll Pathway (START to PAYDAY)</h2>
             </div>
 
-            <!-- Team Status & Current Turn -->
             <div id="status-area" class="mb-6 bg-gray-50 p-4 rounded-lg border">
                 <div class="text-lg font-semibold text-gray-800 mb-2">Current Turn: <span id="current-team-display" class="font-extrabold text-2xl text-team-employee">Employee Team</span></div>
                 <div id="team-status-list" class="flex flex-col sm:flex-row justify-between gap-4">
-                    <!-- Team status cards will be injected here -->
-                </div>
+                    </div>
             </div>
 
-            <!-- SORRY! Game Board (Visual Pathway) -->
             <div id="sorry-board" class="mb-8 p-4 border border-gray-300 rounded-lg shadow-inner bg-gray-100">
                 <h3 class="text-xl font-bold mb-4 text-center text-gray-700">10 Steps to Payday!</h3>
                 <div class="flex justify-between items-end relative h-20 w-full px-2" id="board-path">
-                    <!-- Steps will be generated here -->
-                </div>
+                    </div>
                 <div class="flex justify-between w-full px-4 font-bold text-gray-600">
                     <span>START</span>
                     <span>PAYDAY!</span>
                 </div>
             </div>
 
-            <!-- Question & Answer Area -->
             <div id="question-area" class="border border-indigo-200 bg-indigo-50 p-6 rounded-xl shadow-inner">
                 <h3 class="text-xl font-bold mb-3 text-indigo-800" id="question-category">Category: Payroll Process</h3>
                 <p class="text-2xl font-medium text-gray-800 mb-4" id="question-text">Click the button below to start the game!</p>
@@ -126,7 +113,6 @@
                 </div>
             </div>
 
-            <!-- Feedback Message Area -->
             <div id="feedback-area" class="mt-4 p-3 rounded-lg text-center font-semibold transition duration-300 min-h-[40px] text-gray-700"></div>
 
         </div>
@@ -140,26 +126,32 @@
             { id: 'payroll', name: 'Payroll/Admin', role: 'Reconciliation', position: 0, color: 'var(--color-payroll)' }
         ];
 
-        // Combined Question Deck for variety in the pathway game
+        // CORRECTED and ENHANCED Question Deck based on the Executive Training-Payroll document
         const QUESTION_DECK = [
-            // Payroll Pathway Questions
-            { category: "Payroll Process", question: "Which comes first in payroll processing: Weekly Approval or Timecard Verification?", answer: "Timecard Verification" },
-            { category: "Deadline", question: "When should principals/supervisors verify and approve timecards?", answer: "Wednesday EOD" },
-            { category: "Verification", question: "What two categories must match before a timecard is accurate?", answer: "Total for the Week and Scheduled Hours" },
-            { category: "System Use", question: "What filter should an approver choose under 'My Status' in the system?", answer: "All" },
+            // --- CORRECTED ANSWERS BASED ON FILE ---
+            { category: "Payroll Process", question: "Which comes first in payroll processing: Weekly Approval or Timecard Verification?", answer: "Time verification" },
+            { category: "Verification", question: "On the weekly approval tab, which two categories should match?", answer: "Total for the week and Scheduled" },
+            { category: "Responsibility", question: "Who is primarily responsible for an employee’s timecard accuracy?", answer: "The Employee" },
+            
+            // --- NEW QUESTIONS BASED ON FILE ---
+            { category: "Compliance Law", question: "True or False: Exempt employees are entitled to overtime.", answer: "False" },
+            { category: "Payroll Basics", question: "Pay received after deductions (taxes, insurance, retirement) is called...", answer: "Net pay" },
+            { category: "Policy", question: "Ideally, when should employees enter absences?", answer: "As soon as the absence is known" },
+            { category: "Department", question: "Compensation concerns should be addressed by which department?", answer: "Human Capital Management" },
+            { category: "Documentation", question: "True or False: Function IDs are used to pay employees for extra work not related to their regular job.", answer: "True" },
+            
+            // --- GENERAL/SYSTEM SPECIFIC QUESTIONS (Retained) ---
+            { category: "Deadline", question: "When should principals/supervisors verify and approve timecards?", answer: "Wednesday EOD" }, 
+            { category: "System Use", question: "What filter should an approver choose under 'My Status' in the system?", answer: "All" }, 
             { category: "Final Status", question: "If a timecard shows 'A' under Final Status, what does the approver need to do?", answer: "Already Approved – No further action" },
             { category: "Consequence", question: "What is the consequence of late timecard approval for the employee?", answer: "Risk of payroll delay or error" },
-            { category: "Responsibility", question: "Who is primarily responsible for an employee’s timecard accuracy?", answer: "The Employee" },
             { category: "System Use", question: "When selecting a week to approve, what day should you choose?", answer: "Saturday" },
             { category: "System Use", question: "If a timecard shows 'P' under Final Status, what must the approver do?", answer: "Review and Approve" },
-            // General Finance/Compliance Questions (from original Jeopardy set)
-            { category: "Compliance Law", question: "What does *Non-Exempt* status mean regarding federal wage law?", answer: "Entitled to Overtime" },
-            { category: "Payroll Basics", question: "Pay received *before* any deductions (taxes, insurance) is called...", answer: "Gross Pay" },
-            { category: "Documentation", question: "What must always be attached when submitting requisition paperwork over a board-approved amount?", answer: "Board Documentation / Backup" },
-            { category: "Contact Info", question: "Where should general payroll questions be sent?", answer: "Payroll@desotoisd.org" }
+            { category: "Compliance Law", question: "What does Non-Exempt status mean regarding federal wage law?", answer: "Entitled to Overtime" },
+            { category: "Payroll Basics", question: "Pay received before any deductions (taxes, insurance) is called...", answer: "Gross Pay" }, 
         ];
 
-        // SORRY! Penalty Cards (Based on your game kit documents, translated to movement)
+        // SORRY! Penalty Cards (Movement penalties)
         const SORRY_PENALTIES = [
             { name: "Missed Verification", penalty: -1, message: "You forgot to check your totals. Move back 1 space." },
             { name: "Late Approval", penalty: -1, message: "You missed the Wednesday deadline. Move back 1 space." },
@@ -343,8 +335,8 @@
             
             if (!currentQuestion || teamAnswer === '') return;
 
-            // Simple check: check if the input contains the core answer keyword(s).
-            const correctWords = currentQuestion.answer.toLowerCase().split(/[ /]/).filter(w => w.length > 2);
+            // LOOSE CHECK: Check if the input contains the core answer keyword(s).
+            const correctWords = currentQuestion.answer.toLowerCase().split(/[ /–()&,]/).filter(w => w.length > 2);
             const isCorrect = correctWords.some(word => teamAnswer.includes(word));
             
             inputElement.disabled = true;
@@ -358,7 +350,7 @@
             }
         }
 
-        /** Logic for a correct answer: move team forward 1 space (as per SORRY! rules). */
+        /** Logic for a correct answer: move team forward 1 space ( as per SORRY! rules). */
         function handleCorrectAnswer(question) {
             const currentTeam = TEAMS[currentTeamIndex];
             const spacesToMove = 1; // Correct Answer = Move forward 1 space
