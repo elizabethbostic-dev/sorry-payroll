@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payroll Pathway: SORRY! Game</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* Custom styles and configuration for Tailwind */
+        :root {
+            --color-employee: #3b82f6; /* Blue-500 */
+            --color-supervisor: #10b981; /* Emerald-500 */
+            --color-payroll: #f59e0b; /* Amber-500 */
+        }
+        .text-team-employee { color: var(--color-employee); }
+        .bg-team-employee { background-color: var(--color-employee); }
+        .text-team-supervisor { color: var(--color-supervisor); }
+        .bg-team-supervisor { background-color: var(--color-supervisor); }
+        .text-team-payroll { color: var(--color-payroll); }
+        .bg-team-payroll { background-color: var(--color-payroll); }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+        }
+        .game-pawn {
+            width: 1.25rem;
+            height: 1.25rem;
+            border-radius: 50%;
+            position: absolute;
+            transition: all 0.5s ease-in-out;
+            border: 2px solid white;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+            z-index: 10;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <!-- Main Header -->
+    <header class="bg-gray-800 text-white p-4 shadow-xl">
+        <h1 class="text-3xl font-bold tracking-tight">
+            <span id="gameTitle">Payroll Pathway: The SORRY! Game</span>
+        </h1>
+        <p class="text-sm opacity-80 mt-1" id="gameSubtitle">Compliance & Internal Controls Role-Play</p>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="flex-grow p-4 md:p-8">
+        <div id="game-container" class="max-w-4xl mx-auto bg-white rounded-xl shadow-2xl p-6 md:p-8">
+
+            <!-- Game Phase Header (Fixed on SORRY! Game) -->
+            <div class="flex justify-between items-center mb-6 border-b pb-4">
+                <h2 class="text-2xl font-semibold text-gray-700" id="phase-header">Payroll Pathway (START to PAYDAY)</h2>
+                <!-- Removed toggle phase button -->
+            </div>
+
+            <!-- Team Status & Current Turn -->
+            <div id="status-area" class="mb-6 bg-gray-50 p-4 rounded-lg border">
+                <div class="text-lg font-semibold text-gray-800 mb-2">Current Turn: <span id="current-team-display" class="font-extrabold text-2xl text-team-employee">Employee Team</span></div>
+                <div id="team-status-list" class="flex flex-col sm:flex-row justify-between gap-4">
+                    <!-- Team status cards will be injected here -->
+                </div>
+            </div>
+
+            <!-- SORRY! Game Board (Visual Pathway) -->
+            <div id="sorry-board" class="mb-8 p-4 border border-gray-300 rounded-lg shadow-inner bg-gray-100">
+                <h3 class="text-xl font-bold mb-4 text-center text-gray-700">10 Steps to Payday!</h3>
+                <div class="flex justify-between items-end relative h-20 w-full px-2" id="board-path">
+                    <!-- Steps will be generated here -->
+                </div>
+                <div class="flex justify-between w-full px-4 font-bold text-gray-600">
+                    <span>START</span>
+                    <span>PAYDAY!</span>
+                </div>
+            </div>
+
+            <!-- Question & Answer Area -->
+            <div id="question-area" class="border border-indigo-200 bg-indigo-50 p-6 rounded-xl shadow-inner">
+                <h3 class="text-xl font-bold mb-3 text-indigo-800" id="question-category">Category: Payroll Process</h3>
+                <p class="text-2xl font-medium text-gray-800 mb-4" id="question-text">Click the button below to start the game!</p>
+
+                <div class="mt-4 flex flex-col sm:flex-row gap-4">
+                    <input type="text" id="answer-input" placeholder="Type team's answer here..."
+                           class="flex-grow p-3 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 shadow-sm"
+                           onkeypress="if(event.key === 'Enter') checkAnswer()">
+                    <button id="submit-button" onclick="checkAnswer()" class="bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-3 px-6 rounded-lg transition duration-200 shadow-md">
+                        Submit Answer
+                    </button>
+                    <button id="next-question-button" onclick="nextQuestion()" class="bg-gray-400 hover:bg-gray-500 text-white font-bold py-3 px-6 rounded-lg transition duration-200 shadow-md" style="display: none;">
+                        Next Turn
+                    </button>
+                </div>
+            </div>
+
+            <!-- Feedback Message Area -->
+            <div id="feedback-area" class="mt-4 p-3 rounded-lg text-center font-semibold transition duration-300 min-h-[40px] text-gray-700"></div>
+
+        </div>
+    </main>
+
+    <script>
+        // --- GAME DATA: Questions, Categories, and Penalties ---
+        const TEAMS = [
+            { id: 'employee', name: 'Employee', role: 'Time Entry', position: 0, color: 'var(--color-employee)' },
+            { id: 'supervisor', name: 'Supervisor', role: 'Approval/Verification', position: 0, color: 'var(--color-supervisor)' },
+            { id: 'payroll', name: 'Payroll/Admin', role: 'Reconciliation', position: 0, color: 'var(--color-payroll)' }
+        ];
+
+        // Combined Question Deck for variety in the pathway game
+        const QUESTION_DECK = [
+            // Payroll Pathway Questions
+            { category: "Payroll Process", question: "Which comes first in payroll processing: Weekly Approval or Timecard Verification?", answer: "Timecard Verification" },
+            { category: "Deadline", question: "When should principals/supervisors verify and approve timecards?", answer: "Wednesday EOD" },
+            { category: "Verification", question: "What two categories must match before a timecard is accurate?", answer: "Total for the Week and Scheduled Hours" },
+            { category: "System Use", question: "What filter should an approver choose under 'My Status' in the system?", answer: "All" },
+            { category: "Final Status", question: "If a timecard shows 'A' under Final Status, what does the approver need to do?", answer: "Already Approved – No further action" },
+            { category: "Consequence", question: "What is the consequence of late timecard approval for the employee?", answer: "Risk of payroll delay or error" },
+            { category: "Responsibility", question: "Who is primarily responsible for an employee’s timecard accuracy?", answer: "The Employee" },
+            { category: "System Use", question: "When selecting a week to approve, what day should you choose?", answer: "Saturday" },
+            { category: "System Use", question: "If a timecard shows 'P' under Final Status, what must the approver do?", answer: "Review and Approve" },
+            // General Finance/Compliance Questions (from original Jeopardy set)
+            { category: "Compliance Law", question: "What does *Non-Exempt* status mean regarding federal wage law?", answer: "Entitled to Overtime" },
+            { category: "Payroll Basics", question: "Pay received *before* any deductions (taxes, insurance) is called...", answer: "Gross Pay" },
+            { category: "Documentation", question: "What must always be attached when submitting requisition paperwork over a board-approved amount?", answer: "Board Documentation / Backup" },
+            { category: "Contact Info", question: "Where should general payroll questions be sent?", answer: "Payroll@desotoisd.org" }
+        ];
+
+        // SORRY! Penalty Cards (Based on your game kit documents, translated to movement)
+        const SORRY_PENALTIES = [
+            { name: "Missed Verification", penalty: -1, message: "You forgot to check your totals! Move back 1 space." },
+            { name: "Late Approval", penalty: -1, message: "You missed the Wednesday deadline! Move back 1 space." },
+            { name: "Manual Adjustment Required", penalty: -2, message: "A manual correction is needed. Move back 2 spaces." },
+            { name: "Payroll Rejected", penalty: -3, message: "Entry error found. Return to a previous step (Move back 3 spaces)." },
+            { name: "Compliance Hold!", penalty: -10, message: "A systemic error has halted the whole process! Return to START (Position 0)." },
+            { name: "Missing Documentation", penalty: 0, message: "Incomplete backup file. Lose your next turn." },
+        ];
+
+        const NUM_STEPS = 10;
+        let currentTeamIndex = 0;
+        let questionPool = [];
+        let sorryCardPool = [];
+        let skippedTurn = false; // Flag to handle the 'Lose your next turn' penalty
+
+        // --- GAME SETUP AND RENDERING ---
+
+        /** Initializes the game state and UI elements. */
+        function initGame() {
+            // Shuffle question pools
+            questionPool = shuffle([...QUESTION_DECK]);
+            sorryCardPool = shuffle([...SORRY_PENALTIES]);
+            
+            // Set initial state
+            TEAMS.forEach(team => team.position = 0);
+            currentTeamIndex = -1; // Start at -1 so first call to nextQuestion() sets it to 0
+
+            renderStatus();
+            renderBoard();
+            nextQuestion();
+        }
+
+        /** Shuffles an array (Fisher-Yates algorithm). */
+        function shuffle(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        /** Updates the team status cards and current turn display. */
+        function renderStatus() {
+            const teamStatusList = document.getElementById('team-status-list');
+            const currentTeam = TEAMS[currentTeamIndex];
+
+            if (currentTeam) {
+                document.getElementById('current-team-display').textContent = currentTeam.name + ' Team';
+                document.getElementById('current-team-display').className = `font-extrabold text-2xl text-team-${currentTeam.id}`;
+            }
+
+            teamStatusList.innerHTML = TEAMS.map(team => {
+                const isCurrent = team.id === currentTeam?.id;
+                const borderClass = isCurrent ? `border-indigo-600 ring-4 ring-indigo-200` : `border-gray-300`;
+                return `
+                    <div class="flex flex-col items-center p-3 rounded-lg shadow-md w-full sm:w-1/3 border ${borderClass} transition duration-300" style="background-color: #ffffff;">
+                        <span class="text-xs font-semibold uppercase text-gray-500">${team.role}</span>
+                        <span class="text-xl font-bold" style="color: ${team.color};">${team.name}</span>
+                        <span class="text-lg text-gray-700 mt-1">Step: ${team.position} / ${NUM_STEPS}</span>
+                    </div>
+                `;
+            }).join('');
+
+            // Update pawn positions on the board
+            updatePawns();
+        }
+
+        /** Renders the visual game board pathway. */
+        function renderBoard() {
+            const boardPath = document.getElementById('board-path');
+            boardPath.innerHTML = '';
+
+            // Render steps 0 to NUM_STEPS
+            for (let i = 0; i <= NUM_STEPS; i++) {
+                const isFinish = i === NUM_STEPS;
+                const step = document.createElement('div');
+                step.id = `step-${i}`;
+                step.className = `h-10 w-10 flex items-center justify-center rounded-full border-4 shadow-lg ${isFinish ? 'bg-yellow-400 border-yellow-600' : 'bg-white border-gray-400'} text-sm font-bold relative`;
+                step.textContent = isFinish ? 'END' : i;
+                boardPath.appendChild(step);
+            }
+        }
+
+        /** Updates the visual position of the team pawns. */
+        function updatePawns() {
+            // Remove old pawns
+            document.querySelectorAll('.game-pawn').forEach(p => p.remove());
+
+            TEAMS.forEach(team => {
+                const stepElement = document.getElementById(`step-${team.position}`);
+                if (stepElement) {
+                    const pawn = document.createElement('div');
+                    pawn.className = `game-pawn bg-team-${team.id}`;
+                    pawn.style.backgroundColor = team.color;
+                    
+                    // Stagger pawns slightly if multiple are on the same step
+                    const offsetIndex = TEAMS.findIndex(t => t.id === team.id);
+                    // Use a slightly different stagger for better visibility
+                    const staggerMap = [0, 10, -10]; // Small pixel shifts for each team
+                    const offset = staggerMap[offsetIndex % staggerMap.length];
+                    
+                    pawn.style.top = `-25px`; // Fixed height above the step circle
+                    pawn.style.left = `calc(50% - 0.625rem + ${offset}px)`; // Center and offset slightly
+                    
+                    stepElement.appendChild(pawn);
+                }
+            });
+
+            // Check for game winner
+            const winner = TEAMS.find(team => team.position >= NUM_STEPS);
+            if (winner) {
+                document.getElementById('feedback-area').innerHTML = `<div class="bg-green-100 text-green-700 p-4 rounded-lg text-2xl animate-pulse">🎉 **CONGRATULATIONS ${winner.name.toUpperCase()} TEAM!** 🎉 You reached PAYDAY!</div>`;
+                document.getElementById('answer-input').disabled = true;
+                document.getElementById('submit-button').style.display = 'none';
+                document.getElementById('next-question-button').style.display = 'none';
+            }
+        }
+
+
+        // --- GAME LOGIC ---
+        
+        /** Moves to the next team and displays the next question. */
+        function nextQuestion() {
+            // Check for Win Condition before moving to the next team
+            const winnerCheck = TEAMS.find(team => team.position >= NUM_STEPS);
+            if (winnerCheck) return;
+
+            // Handle 'Lose your next turn' penalty
+            if (skippedTurn) {
+                skippedTurn = false; // Reset flag
+                currentTeamIndex = (currentTeamIndex + 1) % TEAMS.length;
+                renderStatus();
+                document.getElementById('feedback-area').innerHTML = `<div class="bg-red-100 text-red-700 p-3 rounded-lg">🚫 **TURN SKIPPED!** ${TEAMS[currentTeamIndex].name} Team lost their turn due to a previous penalty.</div>`;
+                
+                // Immediately move to the next turn after a brief delay
+                setTimeout(nextQuestion, 2000); 
+                return;
+            }
+
+
+            if (questionPool.length === 0) {
+                // Refill and shuffle the pool if exhausted
+                questionPool = shuffle([...QUESTION_DECK]);
+            }
+
+            // Move to the next team
+            currentTeamIndex = (currentTeamIndex + 1) % TEAMS.length;
+            renderStatus();
+
+            const currentQuestion = questionPool.pop();
+            
+            document.getElementById('question-category').textContent = `Category: ${currentQuestion.category}`;
+            document.getElementById('question-text').textContent = currentQuestion.question;
+            
+            // Reset input and buttons
+            document.getElementById('answer-input').value = '';
+            document.getElementById('answer-input').disabled = false;
+            document.getElementById('submit-button').style.display = 'block';
+            document.getElementById('next-question-button').style.display = 'none';
+            document.getElementById('feedback-area').innerHTML = '';
+        }
+
+        /** Checks the team's answer against the correct answer. */
+        function checkAnswer() {
+            const inputElement = document.getElementById('answer-input');
+            const teamAnswer = inputElement.value.trim().toLowerCase();
+            const currentQuestion = questionPool[questionPool.length - 1]; // Current question is the last one popped
+            
+            if (!currentQuestion || teamAnswer === '') return;
+
+            // Simple check: check if the input contains the core answer keyword(s).
+            const correctWords = currentQuestion.answer.toLowerCase().split(/[ /]/).filter(w => w.length > 2);
+            const isCorrect = correctWords.some(word => teamAnswer.includes(word));
+            
+            inputElement.disabled = true;
+            document.getElementById('submit-button').style.display = 'none';
+            document.getElementById('next-question-button').style.display = 'block';
+
+            if (isCorrect) {
+                handleCorrectAnswer(currentQuestion);
+            } else {
+                handleIncorrectAnswer(currentQuestion);
+            }
+        }
+
+        /** Logic for a correct answer: move team forward 1 space (as per SORRY! rules). */
+        function handleCorrectAnswer(question) {
+            const currentTeam = TEAMS[currentTeamIndex];
+            const spacesToMove = 1; // Correct Answer = Move forward 1 space
+
+            // Update team position
+            currentTeam.position = Math.min(currentTeam.position + spacesToMove, NUM_STEPS);
+            
+            const feedback = `
+                <div class="bg-green-100 text-green-700 p-3 rounded-lg">
+                    ✅ **CORRECT!** The answer was: *${question.answer}*. ${currentTeam.name} Team moves forward **${spacesToMove} step** on the Payroll Pathway!
+                </div>
+            `;
+            document.getElementById('feedback-area').innerHTML = feedback;
+            renderStatus();
+        }
+
+        /** Logic for an incorrect answer: apply a SORRY! penalty. */
+        function handleIncorrectAnswer(question) {
+            const currentTeam = TEAMS[currentTeamIndex];
+            
+            let feedback = `<div class="bg-red-100 text-red-700 p-3 rounded-lg mb-2">❌ **INCORRECT.** The correct answer was: *${question.answer}*.</div>`;
+            
+            if (sorryCardPool.length === 0) {
+                sorryCardPool = shuffle([...SORRY_PENALTIES]);
+            }
+            const penaltyCard = sorryCardPool.pop();
+            
+            // Apply penalty movement
+            currentTeam.position = Math.max(0, currentTeam.position + penaltyCard.penalty);
+            
+            // Check if penalty is 'Lose your next turn' (penalty: 0)
+            if (penaltyCard.penalty === 0 && penaltyCard.name === "Missing Documentation") {
+                skippedTurn = true;
+                feedback += `
+                    <div class="bg-yellow-100 text-yellow-700 p-3 rounded-lg border-2 border-yellow-400">
+                        🚨 **SORRY! Penalty: ${penaltyCard.name}** 🚨<br>
+                        *Effect:* ${penaltyCard.message} **(The next team's turn will be skipped.)**
+                    </div>
+                `;
+            } else if (penaltyCard.penalty === -10) {
+                 feedback += `
+                    <div class="bg-yellow-100 text-red-700 p-3 rounded-lg border-2 border-red-400">
+                        🛑 **MAJOR COMPLIANCE HOLD!** 🛑<br>
+                        *Effect:* ${penaltyCard.message}
+                    </div>
+                `;
+            } else {
+                feedback += `
+                    <div class="bg-yellow-100 text-yellow-700 p-3 rounded-lg border-2 border-yellow-400">
+                        🚨 **SORRY! Penalty: ${penaltyCard.name}** 🚨<br>
+                        *Effect:* ${penaltyCard.message}
+                    </div>
+                `;
+            }
+
+            document.getElementById('feedback-area').innerHTML = feedback;
+            renderStatus();
+        }
+
+        // Initialize the game when the script loads
+        document.addEventListener('DOMContentLoaded', initGame);
+
+    </script>
+</body>
+</html>
