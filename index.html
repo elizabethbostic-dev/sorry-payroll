@@ -50,10 +50,42 @@
     <main class="flex-grow p-4 md:p-8">
         <div id="game-container" class="max-w-4xl mx-auto bg-white rounded-xl shadow-2xl p-6 md:p-8">
 
+            <!-- --- HOW TO PLAY / DIRECTIONS SECTION --- -->
+            <div id="rules-section" class="mb-8 border border-gray-300 rounded-xl overflow-hidden shadow-lg">
+                <button onclick="toggleRules()" class="w-full text-left p-4 bg-gray-100 hover:bg-gray-200 text-lg font-semibold text-gray-700 flex justify-between items-center transition duration-200">
+                    <span>📚 How to Play (GM Instructions)</span>
+                    <span id="rules-toggle-icon" class="text-xl">+</span>
+                </button>
+                
+                <div id="rules-content" class="p-5 bg-white border-t border-gray-200" style="display: none;">
+                    <h3 class="text-xl font-bold text-indigo-700 mb-3">Objective</h3>
+                    <p class="mb-4">Be the first team to move from **START** to **PAYDAY!** (Step 10) by correctly answering Payroll & Timekeeping questions, simulating a smooth compliance process.</p>
+
+                    <h3 class="text-xl font-bold text-indigo-700 mb-3">Game Roles & Turn Flow</h3>
+                    <ul class="list-disc list-inside space-y-1 mb-4 pl-4 text-gray-700">
+                        <li>**Teams:** There are three teams: **Employee**, **Supervisor**, and **Payroll/Admin**. The current turn is displayed at the top.</li>
+                        <li>**Game Master (You):** Read the question displayed, allow teams 10 seconds to discuss/answer, and then input their answer below.</li>
+                    </ul>
+
+                    <h3 class="text-xl font-bold text-indigo-700 mb-3">Movement & Penalties</h3>
+                    <ul class="list-disc list-inside space-y-2 pl-4 font-semibold">
+                        <li class="text-green-600">✅ **Correct Answer:** The team advances **1 step** forward on the Pathway.</li>
+                        <li class="text-red-600">❌ **Incorrect Answer:** The team draws a **SORRY! Card** (applied automatically), resulting in a penalty:
+                            <ul class="list-circle list-inside ml-6 font-normal italic text-sm">
+                                <li>**Move Back:** The team moves backward 1, 2, or 3 spaces.</li>
+                                <li>**Compliance Hold!:** The team is sent **back to START (Position 0)**.</li>
+                                <li>**Missing Documentation:** The team loses their next turn.</li>
+                            </ul>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            <!-- --- END DIRECTIONS SECTION --- -->
+
+
             <!-- Game Phase Header (Fixed on SORRY! Game) -->
             <div class="flex justify-between items-center mb-6 border-b pb-4">
                 <h2 class="text-2xl font-semibold text-gray-700" id="phase-header">Payroll Pathway (START to PAYDAY)</h2>
-                <!-- Removed toggle phase button -->
             </div>
 
             <!-- Team Status & Current Turn -->
@@ -129,19 +161,32 @@
 
         // SORRY! Penalty Cards (Based on your game kit documents, translated to movement)
         const SORRY_PENALTIES = [
-            { name: "Missed Verification", penalty: -1, message: "You forgot to check your totals! Move back 1 space." },
-            { name: "Late Approval", penalty: -1, message: "You missed the Wednesday deadline! Move back 1 space." },
+            { name: "Missed Verification", penalty: -1, message: "You forgot to check your totals. Move back 1 space." },
+            { name: "Late Approval", penalty: -1, message: "You missed the Wednesday deadline. Move back 1 space." },
             { name: "Manual Adjustment Required", penalty: -2, message: "A manual correction is needed. Move back 2 spaces." },
             { name: "Payroll Rejected", penalty: -3, message: "Entry error found. Return to a previous step (Move back 3 spaces)." },
-            { name: "Compliance Hold!", penalty: -10, message: "A systemic error has halted the whole process! Return to START (Position 0)." },
-            { name: "Missing Documentation", penalty: 0, message: "Incomplete backup file. Lose your next turn." },
+            { name: "Compliance Hold!", penalty: -10, message: "A systemic error has halted the whole process. **Return to START (Position 0)**." },
+            { name: "Missing Documentation", penalty: 0, message: "Incomplete backup file. **Lose your next turn**." },
         ];
 
         const NUM_STEPS = 10;
         let currentTeamIndex = 0;
         let questionPool = [];
         let sorryCardPool = [];
-        let skippedTurn = false; // Flag to handle the 'Lose your next turn' penalty
+        let skippedTurn = false; 
+
+        // --- UI UTILITY ---
+        function toggleRules() {
+            const content = document.getElementById('rules-content');
+            const icon = document.getElementById('rules-toggle-icon');
+            if (content.style.display === 'none' || content.style.display === '') {
+                content.style.display = 'block';
+                icon.textContent = '-';
+            } else {
+                content.style.display = 'none';
+                icon.textContent = '+';
+            }
+        }
 
         // --- GAME SETUP AND RENDERING ---
 
@@ -225,8 +270,8 @@
                     
                     // Stagger pawns slightly if multiple are on the same step
                     const offsetIndex = TEAMS.findIndex(t => t.id === team.id);
-                    // Use a slightly different stagger for better visibility
-                    const staggerMap = [0, 10, -10]; // Small pixel shifts for each team
+                    // Small pixel shifts for each team
+                    const staggerMap = [0, 10, -10]; 
                     const offset = staggerMap[offsetIndex % staggerMap.length];
                     
                     pawn.style.top = `-25px`; // Fixed height above the step circle
