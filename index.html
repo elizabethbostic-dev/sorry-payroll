@@ -102,8 +102,8 @@
 
                 <div class="mt-4 flex flex-col sm:flex-row gap-4">
                     <input type="text" id="answer-input" placeholder="Type team's answer here..."
-                           class="flex-grow p-3 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 shadow-sm"
-                           onkeypress="if(event.key === 'Enter') checkAnswer()">
+                            class="flex-grow p-3 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 shadow-sm"
+                            onkeypress="if(event.key === 'Enter') checkAnswer()">
                     <button id="submit-button" onclick="checkAnswer()" class="bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-3 px-6 rounded-lg transition duration-200 shadow-md">
                         Submit Answer
                     </button>
@@ -126,29 +126,31 @@
             { id: 'payroll', name: 'Payroll/Admin', role: 'Reconciliation', position: 0, color: 'var(--color-payroll)' }
         ];
 
-        // CORRECTED and ENHANCED Question Deck based on the Executive Training-Payroll document
+        // CORRECTED and ENHANCED Question Deck based on the attached documents
         const QUESTION_DECK = [
-            // --- CORRECTED ANSWERS BASED ON FILE ---
-            { category: "Payroll Process", question: "Which comes first in payroll processing: Weekly Approval or Timecard Verification?", answer: "Time verification" },
-            { category: "Verification", question: "On the weekly approval tab, which two categories should match?", answer: "Total for the week and Scheduled" },
-            { category: "Responsibility", question: "Who is primarily responsible for an employee’s timecard accuracy?", answer: "The Employee" },
+            // --- CORE PROCESS QUESTIONS (Directly from documents) ---
+            { category: "Payroll Process", question: "Which comes first in payroll processing: Weekly Approval or Timecard Verification?", answer: "Time verification" }, //
+            { category: "Verification", question: "On the weekly approval tab, which two categories should match?", answer: "Total for the week, Scheduled" }, //
+            { category: "Responsibility", question: "Who is primarily responsible for an employee’s timecard accuracy?", answer: "Employee" }, //
+            { category: "Deadline", question: "When should principals/supervisors verify and approve timecards?", answer: "Wednesday EOD" }, //
+            { category: "System Use", question: "When selecting a week to approve, what day should you choose?", answer: "Saturday" }, //
             
-            // --- NEW QUESTIONS BASED ON FILE ---
-            { category: "Compliance Law", question: "True or False: Exempt employees are entitled to overtime.", answer: "False" },
-            { category: "Payroll Basics", question: "Pay received after deductions (taxes, insurance, retirement) is called...", answer: "Net pay" },
-            { category: "Policy", question: "Ideally, when should employees enter absences?", answer: "As soon as the absence is known" },
-            { category: "Department", question: "Compensation concerns should be addressed by which department?", answer: "Human Capital Management" },
-            { category: "Documentation", question: "True or False: Function IDs are used to pay employees for extra work not related to their regular job.", answer: "True" },
+            // --- STATUS & SYSTEM QUESTIONS (Directly from documents) ---
+            { category: "System Use", question: "What filter should an approver choose under 'My Status' in the system?", answer: "All" }, //
+            { category: "Final Status", question: "If a timecard shows 'A' under Final Status, what does the approver need to do?", answer: "Already Approved – No further action" }, //
+            { category: "System Use", question: "If a timecard shows 'P' under Final Status, what must the approver do?", answer: "Review and Approve" }, //
+            { category: "Department", question: "Compensation concerns should be addressed by which department?", answer: "Human Capital Management" }, //
             
-            // --- GENERAL/SYSTEM SPECIFIC QUESTIONS (Retained) ---
-            { category: "Deadline", question: "When should principals/supervisors verify and approve timecards?", answer: "Wednesday EOD" }, 
-            { category: "System Use", question: "What filter should an approver choose under 'My Status' in the system?", answer: "All" }, 
-            { category: "Final Status", question: "If a timecard shows 'A' under Final Status, what does the approver need to do?", answer: "Already Approved – No further action" },
-            { category: "Consequence", question: "What is the consequence of late timecard approval for the employee?", answer: "Risk of payroll delay or error" },
-            { category: "System Use", question: "When selecting a week to approve, what day should you choose?", answer: "Saturday" },
-            { category: "System Use", question: "If a timecard shows 'P' under Final Status, what must the approver do?", answer: "Review and Approve" },
-            { category: "Compliance Law", question: "What does Non-Exempt status mean regarding federal wage law?", answer: "Entitled to Overtime" },
+            // --- COMPLIANCE & PAYROLL BASICS (Directly from documents or confirmed concepts) ---
+            { category: "Compliance Law", question: "True or False: Exempt employees are entitled to overtime.", answer: "False" }, //
+            { category: "Compliance Law", question: "What does Non-Exempt status mean regarding federal wage law?", answer: "Entitled to Overtime" }, //
+            { category: "Payroll Basics", question: "Pay received after deductions (taxes, insurance, retirement) is called...", answer: "Net pay" }, //
             { category: "Payroll Basics", question: "Pay received before any deductions (taxes, insurance) is called...", answer: "Gross Pay" }, 
+            { category: "Policy", question: "Ideally, when should employees enter absences?", answer: "As soon as the absence is known" }, //
+            { category: "Documentation", question: "True or False: Function IDs are used to pay employees for extra work not related to their regular job.", answer: "True" }, //
+
+            // --- GENERAL CONSEQUENCE (Retained for game flavor) ---
+            { category: "Consequence", question: "What is the consequence of late timecard approval for the employee?", answer: "Risk of payroll delay or error" }, 
         ];
 
         // SORRY! Penalty Cards (Movement penalties)
@@ -335,7 +337,8 @@
             
             if (!currentQuestion || teamAnswer === '') return;
 
-            // LOOSE CHECK: Check if the input contains the core answer keyword(s).
+            // LOOSE CHECK LOGIC: Checks if the input contains the core answer keyword(s).
+            // This allows for flexible answers like "approve on Wednesday" for "Wednesday EOD".
             const correctWords = currentQuestion.answer.toLowerCase().split(/[ /–()&,]/).filter(w => w.length > 2);
             const isCorrect = correctWords.some(word => teamAnswer.includes(word));
             
@@ -400,19 +403,3 @@
             } else {
                 feedback += `
                     <div class="bg-yellow-100 text-yellow-700 p-3 rounded-lg border-2 border-yellow-400">
-                        🚨 **SORRY! Penalty: ${penaltyCard.name}** 🚨<br>
-                        *Effect:* ${penaltyCard.message}
-                    </div>
-                `;
-            }
-
-            document.getElementById('feedback-area').innerHTML = feedback;
-            renderStatus();
-        }
-
-        // Initialize the game when the script loads
-        document.addEventListener('DOMContentLoaded', initGame);
-
-    </script>
-</body>
-</html>
