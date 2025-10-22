@@ -94,8 +94,8 @@
                     <ul class="list-disc list-inside space-y-1 mb-4 pl-4 text-gray-700">
                         <li>Be the first of the three teams (**Employee**, **Supervisor**, **Payroll/Admin**) to reach **PAYDAY!** (Step 10).</li>
                         <li>The current team is displayed at the top.</li>
-                        <li>**Action:** When a question appears, start the timer. Teams have **50 seconds** to discuss and provide an answer to the Game Master (you).</li>
-                        <li>**Input:** After the team provides their answer, input it into the box and click **Submit Answer**.</li>
+                        <li>**Action:** When a question appears, the **50-second timer** starts. Teams must discuss and provide an answer to the Game Master (you) before the timer expires.</li>
+                        <li>**Input:** After the team provides their answer, input it into the box or click the appropriate option and click **Submit Answer**.</li>
                     </ul>
 
                     <h3 class="text-xl font-bold text-indigo-700 mb-3">Movement & Penalties</h3>
@@ -136,7 +136,7 @@
                 <div class="flex justify-between items-start mb-3">
                     <h3 class="text-xl font-bold text-indigo-800" id="question-category">Category: Payroll Process</h3>
                     <div id="timer-display" class="text-4xl font-extrabold text-red-600 bg-white px-4 py-1 rounded-lg border-2 border-red-400 shadow-md">
-                        10
+                        50
                     </div>
                 </div>
                 
@@ -158,4 +158,454 @@
                 </div>
             </div>
 
-            <div id="feedback-area" class="mt-4
+            <div id="feedback-area" class="mt-4 p-3 rounded-lg text-center font-semibold transition duration-300 min-h-[40px] text-gray-700"></div>
+
+        </div>
+    </main>
+
+    <script>
+        // --- CONFIGURATION ---
+        const NUM_STEPS = 10;
+        const TIMER_DURATION = 50; // UPDATED: 50 Seconds
+
+        // --- GAME DATA: Teams, Questions, and Penalties ---
+        const TEAMS = [
+            { id: 'employee', name: 'Employee', role: 'Time Entry', position: 0, color: 'var(--color-employee)' },
+            { id: 'supervisor', name: 'Supervisor', role: 'Approval/Verification', position: 0, color: 'var(--color-supervisor)' },
+            { id: 'payroll', name: 'Payroll/Admin', role: 'Reconciliation', position: 0, color: 'var(--color-payroll)' }
+        ];
+
+        // REVISED QUESTION DECK (True/False, Multiple Choice, Short Answer)
+        const QUESTION_DECK = [
+            // --- MULTIPLE CHOICE QUESTIONS (MC) ---
+            { category: "Payroll Process", type: "multiple_choice", question: "Which comes first in the approval process (Verify or Approve)?", answer: "Time verification", options: ["Weekly Approval", "Daily Approval", "Time verification", "Reconciliation"] }, 
+            { category: "Verification", type: "multiple_choice", question: "On the weekly approval tab, which two categories should match?", answer: "Total for the week, Scheduled", options: ["Final Status, Approved", "Total for the week, Scheduled", "Hours Worked, Overtime", "Function ID, Total Hours"] }, 
+            { category: "Responsibility", type: "multiple_choice", question: "Who is primarily responsible for an employee’s timecard accuracy?", answer: "Employee", options: ["Supervisor", "Administrative Assistant", "Payroll Specialist", "Employee"] }, 
+            { category: "Deadline", type: "multiple_choice", question: "When should principals/supervisors verify and approve timecards?", answer: "Wednesday EOD", options: ["Friday EOD", "Monday Morning", "Wednesday EOD", "Payday"] }, 
+            { category: "System Use", type: "multiple_choice", question: "The Employee Service Center (ESC) provides which payroll information?", answer: "Direct Deposit and Tax Withholding", options: ["Monthly Deduction Amount", "Daily & Extra Duty Timecard Approval", "Direct Deposit and Tax Withholding", "Department Budget Codes"] }, 
+            { category: "Department", type: "multiple_choice", question: "Compensation concerns should be addressed by which department?", answer: "Human Capital Management (HCM)", options: ["Payroll", "Finance", "Human Capital Management (HCM)", "Operations"] }, 
+            { category: "System Use", type: "multiple_choice", question: "When selecting a week to approve, what day should you choose?", answer: "Saturday", options: ["Monday", "Friday", "Saturday", "Sunday"] },
+            
+            // --- TRUE / FALSE QUESTIONS (T/F) ---
+            { category: "Compliance Law", type: "true_false", question: "True or False: Exempt employees are entitled to overtime pay.", answer: "False" }, 
+            { category: "Documentation", type: "true_false", question: "True or False: Function IDs are used to pay employees for extra work not related to their regular job.", answer: "True" }, 
+            { category: "Policy", type: "true_false", question: "True or False: If a timecard shows 'A' under Final Status, the approver must review and approve it.", answer: "False" }, 
+            { category: "Compliance Law", type: "true_false", question: "True or False: A nonexempt employee's timecard can be adjusted to avoid paying overtime.", answer: "False" },
+            { category: "System Use", type: "true_false", question: "True or False: If a timecard shows 'P' under Final Status, the approver must review and approve it.", answer: "True" },
+            
+            // --- SHORT ANSWER QUESTIONS (SA) ---
+            { category: "System Use", type: "short_answer", question: "What filter should an approver choose under 'My Status' in the system?", answer: "All" }, 
+            { category: "Payroll Basics", type: "short_answer", question: "Pay received before any deductions (taxes, insurance) is called...", answer: "Gross Pay" },
+            { category: "Payroll Basics", type: "short_answer", question: "Pay received after deductions (taxes, insurance) is called...", answer: "Net Pay" }, 
+            { category: "Consequence", type: "short_answer", question: "What is the consequence of late timecard approval for the employee?", answer: "Risk of payroll delay or error" }, 
+        ];
+
+
+        // SORRY! Penalty Cards (Movement penalties)
+        const SORRY_PENALTIES = [
+            { name: "Missed Verification", penalty: -1, message: "You forgot to check your totals. Move back 1 space." },
+            { name: "Late Approval", penalty: -1, message: "You missed the Wednesday deadline. Move back 1 space." },
+            { name: "Manual Adjustment Required", penalty: -2, message: "A manual correction is needed. Move back 2 spaces." },
+            { name: "Payroll Rejected", penalty: -3, message: "Entry error found. Return to a previous step (Move back 3 spaces)." },
+            { name: "Compliance Hold!", penalty: -10, message: "A systemic error has halted the whole process. **Return to START (Position 0)**." },
+            { name: "Missing Documentation", penalty: 0, message: "Incomplete backup file. **Lose your next turn**." },
+        ];
+
+        let currentTeamIndex = 0;
+        let questionPool = [];
+        let sorryCardPool = [];
+        let skippedTurn = false;
+        let timerInterval = null;
+        let currentQuestion = null; // Store the currently displayed question object
+
+        // --- UI UTILITY ---
+        function toggleRules() {
+            const content = document.getElementById('rules-content');
+            const icon = document.getElementById('rules-toggle-icon');
+            if (content.style.display === 'none' || content.style.display === '') {
+                content.style.display = 'block';
+                icon.textContent = '-';
+            } else {
+                content.style.display = 'none';
+                icon.textContent = '+';
+            }
+        }
+
+        // --- GAME SETUP AND RENDERING ---
+
+        /** Initializes the game state and UI elements. */
+        function initGame() {
+            // Shuffle question pools
+            questionPool = shuffle([...QUESTION_DECK]);
+            sorryCardPool = shuffle([...SORRY_PENALTIES]);
+            
+            // Set initial state
+            TEAMS.forEach(team => team.position = 0);
+            currentTeamIndex = -1; // Start at -1 so first call to nextQuestion() sets it to 0
+
+            renderStatus();
+            renderBoard();
+            
+            // Display initial state and instructions before the first question
+            document.getElementById('timer-display').textContent = TIMER_DURATION;
+            document.getElementById('answer-input').disabled = true;
+            document.getElementById('submit-button').onclick = nextQuestion;
+            document.getElementById('submit-button').textContent = "Start Game";
+            document.getElementById('submit-button').classList.remove('bg-indigo-600', 'hover:bg-indigo-700');
+            document.getElementById('submit-button').classList.add('bg-green-600', 'hover:bg-green-700');
+        }
+
+        /** Shuffles an array (Fisher-Yates algorithm). */
+        function shuffle(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        /** Updates the team status cards and current turn display. */
+        function renderStatus() {
+            const teamStatusList = document.getElementById('team-status-list');
+            const currentTeam = TEAMS[currentTeamIndex];
+
+            if (currentTeam) {
+                document.getElementById('current-team-display').textContent = currentTeam.name + ' Team';
+                document.getElementById('current-team-display').className = `font-extrabold text-2xl text-team-${currentTeam.id}`;
+            }
+
+            teamStatusList.innerHTML = TEAMS.map(team => {
+                const isCurrent = team.id === currentTeam?.id;
+                const borderClass = isCurrent ? `border-indigo-600 ring-4 ring-indigo-200` : `border-gray-300`;
+                return `
+                    <div class="flex flex-col items-center p-3 rounded-lg shadow-xl w-full sm:w-1/3 border ${borderClass} transition duration-300 bg-white">
+                        <span class="text-xs font-semibold uppercase text-gray-500">${team.role}</span>
+                        <span class="text-xl font-bold" style="color: ${team.color};">${team.name}</span>
+                        <span class="text-lg text-gray-700 mt-1">Step: ${team.position} / ${NUM_STEPS}</span>
+                    </div>
+                `;
+            }).join('');
+
+            // Update pawn positions on the board
+            updatePawns();
+        }
+
+        /** Renders the visual game board pathway. */
+        function renderBoard() {
+            const boardPath = document.getElementById('board-path');
+            boardPath.innerHTML = '';
+
+            // Render steps 0 (START) to NUM_STEPS (PAYDAY)
+            for (let i = 0; i <= NUM_STEPS; i++) {
+                const isStart = i === 0;
+                const isFinish = i === NUM_STEPS;
+                
+                let stepClass = 'game-step flex items-center justify-center rounded-full border-4 shadow-xl font-extrabold relative';
+
+                if (isStart) {
+                    // Create a large, unnumbered START marker
+                    stepClass = 'game-step w-16 h-16 flex items-center justify-center rounded-full border-4 shadow-xl font-extrabold relative text-xl bg-green-200 border-green-600 text-green-800';
+                    stepContent = '🏠'; // Home icon for START
+                } else if (isFinish) {
+                     // Create a large, unnumbered PAYDAY marker
+                    stepClass = 'game-step w-16 h-16 flex items-center justify-center rounded-full border-4 shadow-xl font-extrabold relative text-xl bg-yellow-400 border-yellow-700 text-yellow-900';
+                    stepContent = '💵'; // Money icon for PAYDAY
+                } else {
+                    stepClass += ' bg-white border-gray-400 text-gray-600 text-lg';
+                }
+                
+                const step = document.createElement('div');
+                step.id = `step-${i}`;
+                step.className = stepClass;
+                step.textContent = isStart || isFinish ? stepContent : i;
+                
+                boardPath.appendChild(step);
+            }
+        }
+
+        /** Updates the visual position of the team pawns. */
+        function updatePawns() {
+            // Remove old pawns
+            document.querySelectorAll('.game-pawn').forEach(p => p.remove());
+
+            TEAMS.forEach(team => {
+                const stepElement = document.getElementById(`step-${team.position}`);
+                if (stepElement) {
+                    const pawn = document.createElement('div');
+                    pawn.className = `game-pawn bg-team-${team.id}`;
+                    pawn.style.backgroundColor = team.color;
+                    
+                    // Add initial for easier identification
+                    pawn.textContent = team.name.charAt(0);
+                    
+                    // Stagger pawns slightly if multiple are on the same step
+                    const offsetIndex = TEAMS.findIndex(t => t.id === team.id);
+                    const staggerMap = [-10, 0, 10]; // Employee, Supervisor, Payroll
+                    const offset = staggerMap[offsetIndex % staggerMap.length];
+                    
+                    pawn.style.top = `-2.5rem`; // Fixed height above the step circle
+                    pawn.style.left = `calc(50% - 0.75rem + ${offset}px)`; // Center and offset slightly (0.75rem is half of 1.5rem pawn)
+                    
+                    stepElement.appendChild(pawn);
+                }
+            });
+
+            // Check for game winner
+            const winner = TEAMS.find(team => team.position >= NUM_STEPS);
+            if (winner) {
+                document.getElementById('feedback-area').innerHTML = `<div class="bg-green-100 text-green-700 p-4 rounded-lg text-2xl animate-pulse font-extrabold">🎉 **CONGRATULATIONS ${winner.name.toUpperCase()} TEAM!** 🎉 You reached PAYDAY!</div>`;
+                document.getElementById('answer-input').disabled = true;
+                document.getElementById('submit-button').style.display = 'none';
+                document.getElementById('next-question-button').style.display = 'none';
+                stopTimer();
+            }
+        }
+
+        // --- TIMER LOGIC ---
+
+        function startTimer() {
+            stopTimer(); // Clear any existing timer
+            let timeLeft = TIMER_DURATION;
+            const timerDisplay = document.getElementById('timer-display');
+            timerDisplay.textContent = timeLeft;
+            timerDisplay.classList.remove('text-red-600');
+            timerDisplay.classList.add('text-green-600');
+            
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                timerDisplay.textContent = timeLeft;
+
+                if (timeLeft <= 10) { // Set warning at 10 seconds
+                    timerDisplay.classList.remove('text-green-600');
+                    timerDisplay.classList.add('text-red-600');
+                }
+                
+                if (timeLeft <= 0) {
+                    timerExpired();
+                }
+            }, 1000);
+        }
+
+        function stopTimer() {
+            clearInterval(timerInterval);
+            document.getElementById('timer-display').classList.remove('text-green-600');
+            document.getElementById('timer-display').classList.add('text-red-600');
+            document.getElementById('timer-display').textContent = '0'; // Ensure it shows 0 when stopped for timeout
+        }
+
+        function timerExpired() {
+            stopTimer();
+            document.getElementById('feedback-area').innerHTML = `<div class="bg-red-200 text-red-800 p-3 rounded-lg animate-pulse font-bold">⏰ **TIME OUT!** No answer submitted. Incorrect answer penalty applied.</div>`;
+            document.getElementById('answer-input').disabled = true;
+            document.querySelectorAll('#options-area button').forEach(btn => btn.disabled = true);
+            document.getElementById('submit-button').style.display = 'none';
+            document.getElementById('next-question-button').style.display = 'block';
+            
+            // Apply penalty automatically
+            handleIncorrectAnswer(currentQuestion);
+        }
+
+
+        // --- GAME LOGIC ---
+        
+        /** Moves to the next team and displays the next question. */
+        function nextQuestion() {
+            // Revert Start button to Submit button
+            document.getElementById('submit-button').onclick = checkAnswer;
+            document.getElementById('submit-button').textContent = "Submit Answer";
+            document.getElementById('submit-button').classList.remove('bg-green-600', 'hover:bg-green-700');
+            document.getElementById('submit-button').classList.add('bg-indigo-600', 'hover:bg-indigo-700');
+
+
+            // Check for Win Condition before moving to the next team
+            const winnerCheck = TEAMS.find(team => team.position >= NUM_STEPS);
+            if (winnerCheck) return;
+
+            // Handle 'Lose your next turn' penalty
+            if (skippedTurn) {
+                const teamSkipped = TEAMS[currentTeamIndex]; // This is the team whose turn was skipped
+                skippedTurn = false; // Reset flag
+                
+                // Advance to the *next* team after the skipped one
+                currentTeamIndex = (currentTeamIndex + 1) % TEAMS.length; 
+                renderStatus();
+                document.getElementById('feedback-area').innerHTML = `<div class="bg-red-100 text-red-700 p-3 rounded-lg">🚫 **TURN SKIPPED!** ${teamSkipped.name} Team lost their turn due to a previous penalty. Now moving to ${TEAMS[currentTeamIndex].name} Team's turn.</div>`;
+                
+                // Immediately move to the next turn after a brief delay
+                setTimeout(nextQuestion, 3000); // 3 seconds delay for visibility
+                return;
+            }
+
+
+            if (questionPool.length === 0) {
+                // Refill and shuffle the pool if exhausted
+                questionPool = shuffle([...QUESTION_DECK]);
+            }
+
+            // Move to the next team
+            currentTeamIndex = (currentTeamIndex + 1) % TEAMS.length;
+            renderStatus();
+
+            // Pop the question and set it as the current global question
+            currentQuestion = questionPool.pop();
+            
+            document.getElementById('question-category').textContent = `Category: ${currentQuestion.category}`;
+            document.getElementById('question-text').textContent = currentQuestion.question;
+            
+            // Render options or input field based on question type
+            renderQuestionOptions(currentQuestion);
+            
+            // Reset input and buttons
+            document.getElementById('answer-input').value = '';
+            document.getElementById('answer-input').disabled = false;
+            document.getElementById('submit-button').style.display = 'block';
+            document.getElementById('next-question-button').style.display = 'none';
+            document.getElementById('feedback-area').innerHTML = '';
+            
+            startTimer();
+        }
+
+        /** Renders the input or option buttons based on question type. */
+        function renderQuestionOptions(question) {
+            const optionsArea = document.getElementById('options-area');
+            const answerInput = document.getElementById('answer-input');
+            
+            // Clear previous
+            optionsArea.innerHTML = '';
+            
+            if (question.type === 'multiple_choice' || question.type === 'true_false') {
+                answerInput.style.display = 'none';
+                
+                let optionsList = question.type === 'true_false' ? ["True", "False"] : question.options;
+
+                optionsList.forEach((option, index) => {
+                    const button = document.createElement('button');
+                    button.className = 'bg-white hover:bg-indigo-100 border border-indigo-400 text-gray-800 font-semibold py-3 px-4 rounded-lg shadow-md text-left transition duration-200';
+                    button.textContent = `${String.fromCharCode(65 + index)}. ${option}`; // A. B. C. format
+                    button.onclick = () => {
+                        // Automatically submit the chosen option's text as the answer
+                        document.getElementById('answer-input').value = option;
+                        checkAnswer();
+                    };
+                    optionsArea.appendChild(button);
+                });
+            } else {
+                // Short Answer/Open Ended
+                answerInput.style.display = 'block';
+                answerInput.placeholder = "Type team's answer here...";
+            }
+        }
+
+
+        /** Checks the team's answer against the correct answer. */
+        function checkAnswer() {
+            // Ensure a question is loaded and the game has started
+            if (!currentQuestion) return; 
+
+            stopTimer(); // Stop timer immediately upon submission
+
+            const inputElement = document.getElementById('answer-input');
+            const teamAnswer = inputElement.value.trim().toLowerCase();
+            
+            if (teamAnswer === '') {
+                 // Re-start timer if no answer was entered when submitting and it's a typing question
+                if (inputElement.style.display !== 'none' || currentQuestion.type === 'short_answer') {
+                    startTimer(); 
+                    return;
+                }
+            }
+
+            // LOOSE CHECK LOGIC: Checks if the input contains the core answer keyword(s).
+            const correctWords = currentQuestion.answer.toLowerCase().split(/[ /–()&,]/).filter(w => w.length > 2 || w === 'all'); 
+            let isCorrect = correctWords.some(word => teamAnswer.includes(word));
+
+            // Special check for multi-word answers where order doesn't matter
+            if (currentQuestion.answer.toLowerCase().split(' ').length > 1) {
+                 const answerParts = currentQuestion.answer.toLowerCase().split(/[ ,]/).filter(w => w.length > 0 && w.length > 2);
+                 const teamParts = teamAnswer.split(/[ ,]/).filter(w => w.length > 0);
+                 // True if every core answer part is present in the team's answer
+                 isCorrect = answerParts.every(part => teamParts.includes(part));
+            }
+
+            // Check for True/False exactly
+            if (currentQuestion.type === 'true_false') {
+                isCorrect = teamAnswer === currentQuestion.answer.toLowerCase();
+            }
+            
+            inputElement.disabled = true;
+            document.querySelectorAll('#options-area button').forEach(btn => btn.disabled = true);
+            document.getElementById('submit-button').style.display = 'none';
+            document.getElementById('next-question-button').style.display = 'block';
+
+            if (isCorrect) {
+                handleCorrectAnswer(currentQuestion);
+            } else {
+                handleIncorrectAnswer(currentQuestion);
+            }
+        }
+
+        /** Logic for a correct answer: move team forward 1 space. */
+        function handleCorrectAnswer(question) {
+            const currentTeam = TEAMS[currentTeamIndex];
+            const spacesToMove = 1; // Correct Answer = Move forward 1 space
+
+            // Update team position
+            currentTeam.position = Math.min(currentTeam.position + spacesToMove, NUM_STEPS);
+            
+            const feedback = `
+                <div class="bg-green-100 text-green-700 p-3 rounded-lg">
+                    ✅ **CORRECT!** The answer was: *${question.answer}*. ${currentTeam.name} Team moves forward **${spacesToMove} step** on the Payroll Pathway!
+                </div>
+            `;
+            document.getElementById('feedback-area').innerHTML = feedback;
+            renderStatus();
+        }
+
+        /** Logic for an incorrect answer: apply a SORRY! penalty. */
+        function handleIncorrectAnswer(question) {
+            const currentTeam = TEAMS[currentTeamIndex];
+            
+            let feedback = `<div class="bg-red-100 text-red-700 p-3 rounded-lg mb-2">❌ **INCORRECT.** The correct answer was: *${question.answer}*.</div>`;
+            
+            if (sorryCardPool.length === 0) {
+                sorryCardPool = shuffle([...SORRY_PENALTIES]);
+            }
+            const penaltyCard = sorryCardPool.pop();
+            
+            // Apply penalty movement
+            currentTeam.position = Math.max(0, currentTeam.position + penaltyCard.penalty);
+            
+            // Check if penalty is 'Lose your next turn' (penalty: 0)
+            if (penaltyCard.penalty === 0 && penaltyCard.name === "Missing Documentation") {
+                skippedTurn = true;
+                feedback += `
+                    <div class="bg-yellow-100 text-yellow-700 p-3 rounded-lg border-2 border-yellow-400">
+                        🚨 **SORRY! Penalty: ${penaltyCard.name}** 🚨<br>
+                        *Effect:* ${penaltyCard.message} **(The next team's turn will be skipped.)**
+                    </div>
+                `;
+            } else if (penaltyCard.penalty === -10) {
+                 feedback += `
+                    <div class="bg-red-100 text-red-700 p-3 rounded-lg border-2 border-red-400">
+                        🛑 **MAJOR COMPLIANCE HOLD!** 🛑<br>
+                        *Effect:* ${penaltyCard.message}
+                    </div>
+                `;
+            } else {
+                feedback += `
+                    <div class="bg-yellow-100 text-yellow-700 p-3 rounded-lg border-2 border-yellow-400">
+                        ⚠️ **SORRY! Penalty: ${penaltyCard.name}** ⚠️<br>
+                        *Effect:* ${penaltyCard.message}
+                    </div>
+                `;
+            }
+
+            document.getElementById('feedback-area').innerHTML = feedback;
+            renderStatus();
+        }
+
+        // Initialize the game when the script loads
+        initGame();
+    </script>
+</body>
+</html>
