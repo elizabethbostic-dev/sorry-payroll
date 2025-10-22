@@ -3,15 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Payroll Pathway: SORRY! Game (Corrected)</title>
+    <title>Payroll Pathway: The SORRY! Game</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
     <style>
         /* Custom styles and configuration for Tailwind */
         :root {
             --color-employee: #3b82f6; /* Blue-500 */
             --color-supervisor: #10b981; /* Emerald-500 */
             --color-payroll: #f59e0b; /* Amber-500 */
+            --color-step: #4b5563; /* Gray-600 for steps */
+            --color-start: #10b981; /* Start Green */
+            --color-payday: #f97316; /* Payday Orange */
         }
         .text-team-employee { color: var(--color-employee); }
         .bg-team-employee { background-color: var(--color-employee); }
@@ -23,29 +26,62 @@
             font-family: 'Inter', sans-serif;
             background-color: #f3f4f6;
         }
+        /* ENHANCEMENT: Larger, more pronounced pawns */
         .game-pawn {
-            width: 1.25rem;
-            height: 1.25rem;
+            width: 1.5rem; /* Larger width */
+            height: 1.5rem; /* Larger height */
             border-radius: 50%;
             position: absolute;
             transition: all 0.5s ease-in-out;
-            border: 2px solid white;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-            z-index: 10;
+            border: 3px solid white; /* Thicker border */
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.4); /* Stronger shadow */
+            z-index: 20; /* Higher z-index to always be on top */
+            font-size: 0.6rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 700;
+        }
+
+        /* ENHANCEMENT: New style for the pathway connecting line */
+        #board-path::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 8px; /* Thicker line */
+            background: linear-gradient(to right, var(--color-start), #8b5cf6, var(--color-payday)); /* Gradient path */
+            border-radius: 4px;
+            transform: translateY(-50%);
+            z-index: 5; /* Below the steps and pawns */
+        }
+
+        /* ENHANCEMENT: Step marker style */
+        .game-step {
+            height: 2.5rem; /* Larger step size */
+            width: 2.5rem; /* Larger step size */
+            z-index: 10; /* Above the path line */
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            transition: transform 0.2s;
+        }
+        .game-step:hover {
+            transform: scale(1.1);
         }
     </style>
 </head>
 <body class="min-h-screen flex flex-col">
 
     <header class="bg-gray-800 text-white p-4 shadow-xl">
-        <h1 class="text-3xl font-bold tracking-tight">
-            <span id="gameTitle">Payroll Pathway: The SORRY! Game</span>
+        <h1 class="text-3xl font-extrabold tracking-tight">
+            <span id="gameTitle">💰 Payroll Pathway: The SORRY! Game</span>
         </h1>
         <p class="text-sm opacity-80 mt-1" id="gameSubtitle">Compliance & Internal Controls Role-Play</p>
     </header>
 
     <main class="flex-grow p-4 md:p-8">
-        <div id="game-container" class="max-w-4xl mx-auto bg-white rounded-xl shadow-2xl p-6 md:p-8">
+        <div id="game-container" class="max-w-5xl mx-auto bg-white rounded-xl shadow-2xl p-6 md:p-8">
 
             <div id="rules-section" class="mb-8 border border-gray-300 rounded-xl overflow-hidden shadow-lg">
                 <button onclick="toggleRules()" class="w-full text-left p-4 bg-gray-100 hover:bg-gray-200 text-lg font-semibold text-gray-700 flex justify-between items-center transition duration-200">
@@ -80,34 +116,34 @@
                 <h2 class="text-2xl font-semibold text-gray-700" id="phase-header">Payroll Pathway (START to PAYDAY)</h2>
             </div>
 
-            <div id="status-area" class="mb-6 bg-gray-50 p-4 rounded-lg border">
+            <div id="status-area" class="mb-6 bg-indigo-50 p-4 rounded-lg border border-indigo-200 shadow-inner">
                 <div class="text-lg font-semibold text-gray-800 mb-2">Current Turn: <span id="current-team-display" class="font-extrabold text-2xl text-team-employee">Employee Team</span></div>
                 <div id="team-status-list" class="flex flex-col sm:flex-row justify-between gap-4">
                     </div>
             </div>
 
-            <div id="sorry-board" class="mb-8 p-4 border border-gray-300 rounded-lg shadow-inner bg-gray-100">
-                <h3 class="text-xl font-bold mb-4 text-center text-gray-700">10 Steps to Payday!</h3>
-                <div class="flex justify-between items-end relative h-20 w-full px-2" id="board-path">
+            <div id="sorry-board" class="mb-8 p-6 border border-gray-300 rounded-xl shadow-2xl bg-gray-50">
+                <h3 class="text-xl font-extrabold mb-4 text-center text-gray-700">10 Steps to Payday!</h3>
+                <div class="flex justify-between items-end relative h-28 w-full px-2" id="board-path">
                     </div>
-                <div class="flex justify-between w-full px-4 font-bold text-gray-600">
-                    <span>START</span>
-                    <span>PAYDAY!</span>
+                <div class="flex justify-between w-full px-4 font-extrabold text-lg mt-2">
+                    <span style="color: var(--color-start);">START</span>
+                    <span style="color: var(--color-payday);">PAYDAY!</span>
                 </div>
             </div>
 
-            <div id="question-area" class="border border-indigo-200 bg-indigo-50 p-6 rounded-xl shadow-inner">
+            <div id="question-area" class="border border-indigo-400 bg-indigo-100 p-6 rounded-xl shadow-xl">
                 <h3 class="text-xl font-bold mb-3 text-indigo-800" id="question-category">Category: Payroll Process</h3>
-                <p class="text-2xl font-medium text-gray-800 mb-4" id="question-text">Click the button below to start the game!</p>
+                <p class="text-2xl font-extrabold text-gray-800 mb-4" id="question-text">Click the button below to start the game!</p>
 
                 <div class="mt-4 flex flex-col sm:flex-row gap-4">
                     <input type="text" id="answer-input" placeholder="Type team's answer here..."
-                            class="flex-grow p-3 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 shadow-sm"
+                            class="flex-grow p-3 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 shadow-inner"
                             onkeypress="if(event.key === 'Enter') checkAnswer()">
-                    <button id="submit-button" onclick="checkAnswer()" class="bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-3 px-6 rounded-lg transition duration-200 shadow-md">
+                    <button id="submit-button" onclick="checkAnswer()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-lg transition duration-200 shadow-lg">
                         Submit Answer
                     </button>
-                    <button id="next-question-button" onclick="nextQuestion()" class="bg-gray-400 hover:bg-gray-500 text-white font-bold py-3 px-6 rounded-lg transition duration-200 shadow-md" style="display: none;">
+                    <button id="next-question-button" onclick="nextQuestion()" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-3 px-6 rounded-lg transition duration-200 shadow-lg" style="display: none;">
                         Next Turn
                     </button>
                 </div>
@@ -222,7 +258,7 @@
                 const isCurrent = team.id === currentTeam?.id;
                 const borderClass = isCurrent ? `border-indigo-600 ring-4 ring-indigo-200` : `border-gray-300`;
                 return `
-                    <div class="flex flex-col items-center p-3 rounded-lg shadow-md w-full sm:w-1/3 border ${borderClass} transition duration-300" style="background-color: #ffffff;">
+                    <div class="flex flex-col items-center p-3 rounded-lg shadow-xl w-full sm:w-1/3 border ${borderClass} transition duration-300 bg-white">
                         <span class="text-xs font-semibold uppercase text-gray-500">${team.role}</span>
                         <span class="text-xl font-bold" style="color: ${team.color};">${team.name}</span>
                         <span class="text-lg text-gray-700 mt-1">Step: ${team.position} / ${NUM_STEPS}</span>
@@ -239,13 +275,39 @@
             const boardPath = document.getElementById('board-path');
             boardPath.innerHTML = '';
 
-            // Render steps 0 to NUM_STEPS
+            // Render steps 0 (START) to NUM_STEPS (PAYDAY)
             for (let i = 0; i <= NUM_STEPS; i++) {
+                const isStart = i === 0;
                 const isFinish = i === NUM_STEPS;
+                
+                let stepClass = 'game-step flex items-center justify-center rounded-full border-4 shadow-xl font-extrabold relative';
+                let stepContent = i;
+
+                if (isStart) {
+                    stepClass += ' bg-white border-team-supervisor text-gray-800 text-sm'; // Start is Step 0
+                    stepContent = 'START';
+                } else if (isFinish) {
+                    stepClass += ' bg-yellow-400 border-yellow-600 text-gray-800 text-sm';
+                    stepContent = 'PAYDAY';
+                } else {
+                    stepClass += ' bg-white border-gray-400 text-gray-600 text-lg';
+                }
+                
                 const step = document.createElement('div');
                 step.id = `step-${i}`;
-                step.className = `h-10 w-10 flex items-center justify-center rounded-full border-4 shadow-lg ${isFinish ? 'bg-yellow-400 border-yellow-600' : 'bg-white border-gray-400'} text-sm font-bold relative`;
-                step.textContent = isFinish ? 'END' : i;
+                step.className = stepClass;
+                step.textContent = isStart || isFinish ? '' : i;
+                
+                if (isStart) {
+                    // Create a large, unnumbered START marker
+                    step.className = 'game-step w-16 h-16 flex items-center justify-center rounded-full border-4 shadow-xl font-extrabold relative text-xl bg-green-200 border-green-600 text-green-800';
+                    step.textContent = '🏠'; // Home icon for START
+                } else if (isFinish) {
+                     // Create a large, unnumbered PAYDAY marker
+                    step.className = 'game-step w-16 h-16 flex items-center justify-center rounded-full border-4 shadow-xl font-extrabold relative text-xl bg-yellow-400 border-yellow-700 text-yellow-900';
+                    step.textContent = '💵'; // Money icon for PAYDAY
+                }
+                
                 boardPath.appendChild(step);
             }
         }
@@ -262,14 +324,17 @@
                     pawn.className = `game-pawn bg-team-${team.id}`;
                     pawn.style.backgroundColor = team.color;
                     
+                    // Add initial for easier identification
+                    pawn.textContent = team.name.charAt(0);
+                    
                     // Stagger pawns slightly if multiple are on the same step
                     const offsetIndex = TEAMS.findIndex(t => t.id === team.id);
-                    // Small pixel shifts for each team
-                    const staggerMap = [0, 10, -10]; 
+                    // Small pixel shifts for each team, designed for the larger step circles
+                    const staggerMap = [-10, 0, 10]; // Employee, Supervisor, Payroll
                     const offset = staggerMap[offsetIndex % staggerMap.length];
                     
-                    pawn.style.top = `-25px`; // Fixed height above the step circle
-                    pawn.style.left = `calc(50% - 0.625rem + ${offset}px)`; // Center and offset slightly
+                    pawn.style.top = `-2.5rem`; // Fixed height above the step circle
+                    pawn.style.left = `calc(50% - 0.75rem + ${offset}px)`; // Center and offset slightly (0.75rem is half of 1.5rem pawn)
                     
                     stepElement.appendChild(pawn);
                 }
@@ -278,7 +343,7 @@
             // Check for game winner
             const winner = TEAMS.find(team => team.position >= NUM_STEPS);
             if (winner) {
-                document.getElementById('feedback-area').innerHTML = `<div class="bg-green-100 text-green-700 p-4 rounded-lg text-2xl animate-pulse">🎉 **CONGRATULATIONS ${winner.name.toUpperCase()} TEAM!** 🎉 You reached PAYDAY!</div>`;
+                document.getElementById('feedback-area').innerHTML = `<div class="bg-green-100 text-green-700 p-4 rounded-lg text-2xl animate-pulse font-extrabold">🎉 **CONGRATULATIONS ${winner.name.toUpperCase()} TEAM!** 🎉 You reached PAYDAY!</div>`;
                 document.getElementById('answer-input').disabled = true;
                 document.getElementById('submit-button').style.display = 'none';
                 document.getElementById('next-question-button').style.display = 'none';
@@ -286,7 +351,7 @@
         }
 
 
-        // --- GAME LOGIC ---
+        // --- GAME LOGIC (Unchanged, retained for completeness) ---
         
         /** Moves to the next team and displays the next question. */
         function nextQuestion() {
@@ -338,7 +403,6 @@
             if (!currentQuestion || teamAnswer === '') return;
 
             // LOOSE CHECK LOGIC: Checks if the input contains the core answer keyword(s).
-            // This allows for flexible answers like "approve on Wednesday" for "Wednesday EOD".
             const correctWords = currentQuestion.answer.toLowerCase().split(/[ /–()&,]/).filter(w => w.length > 2);
             const isCorrect = correctWords.some(word => teamAnswer.includes(word));
             
@@ -395,7 +459,7 @@
                 `;
             } else if (penaltyCard.penalty === -10) {
                  feedback += `
-                    <div class="bg-yellow-100 text-red-700 p-3 rounded-lg border-2 border-red-400">
+                    <div class="bg-red-100 text-red-700 p-3 rounded-lg border-2 border-red-400">
                         🛑 **MAJOR COMPLIANCE HOLD!** 🛑<br>
                         *Effect:* ${penaltyCard.message}
                     </div>
@@ -403,3 +467,18 @@
             } else {
                 feedback += `
                     <div class="bg-yellow-100 text-yellow-700 p-3 rounded-lg border-2 border-yellow-400">
+                        ⚠️ **SORRY! Penalty: ${penaltyCard.name}** ⚠️<br>
+                        *Effect:* ${penaltyCard.message}
+                    </div>
+                `;
+            }
+
+            document.getElementById('feedback-area').innerHTML = feedback;
+            renderStatus();
+        }
+
+        // Initialize the game when the script loads
+        initGame();
+    </script>
+</body>
+</html>
